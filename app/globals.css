@@ -1,14 +1,46 @@
 @import "tailwindcss";
 
-body {
-  background-color: #0c0a09;
-  background-image: radial-gradient(circle at 1px 1px, #44403c 1px, transparent 0);
-  background-size: 2rem 2rem;
+:root {
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-surface: rgba(20, 20, 20, 0.6);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
 }
 
-.glass-container {
-  background-color: rgba(31, 41, 55, 0.5); /* bg-gray-800 with 50% opacity */
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+body {
+  background-color: #050505;
+  color: #ffffff;
+  /* Premium dark background with a subtle fixed gradient center */
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.15), transparent 50%),
+    radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.1), transparent 40%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle noise texture overlay for realism */
+.bg-noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Custom Scrollbar for response area */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
