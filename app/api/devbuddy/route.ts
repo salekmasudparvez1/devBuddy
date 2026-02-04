@@ -1,194 +1,217 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * DevBuddy Backend API Route (Edge Runtime)
+ * 
+ * Proxies requests to Algolia Agent Studio REST API and forwards streaming responses
+ * back to the frontend client for real-time message updates.
+ * 
+ * Environment Variables Required:
+ * - ALGOLIA_AGENT_URL: The Agent Studio REST endpoint
+ *   Example: https://agent.algolia.com/v1/instances/{instance-id}/responses
+ * - ALGOLIA_API_KEY: API Key with access to Agent Studio
+ * - ALGOLIA_APP_ID: Algolia application ID
+ * 
+ * Frontend expects SSE (Server-Sent Events) formatted responses with JSON payloads:
+ * Format:
+ *   data: {"type":"text-delta","delta":"Hello "}
+ *   data: {"type":"text-delta","delta":"world"}
+ *   data: [DONE]
+ * 
+ * The frontend streaming parser in hooks/useChat.tsx handles:
+ * - text-delta: Appends text character-by-character for typing effect
+ * - Other Algolia Agent Studio event types
+ * - Fallback JSON parsing for non-streaming responses
+ */
+
+export const runtime = 'edge';
+
+const ALGOLIA_AGENT_URL = process.env.ALGOLIA_AGENT_URL!;
+const ALGOLIA_API_KEY = process.env.ALGOLIA_API_KEY!;
+const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID!;
 
 /**
- * API route handler for the DevBuddy agent.
- * This endpoint proxies requests from the frontend to the Algolia agent.
- * It ensures that Algolia credentials are kept secret and are not exposed to the browser.
+ * Format data as Server-Sent Events (SSE)
+ * 
+ * SSE format: "data: <json>\n\n"
+ * Used to stream responses to the client incrementally
  */
-export async function POST(req: NextRequest) {
-  const { message } = await req.json();
+function formatAsSSE(data: any): string {
+  return `data: ${JSON.stringify(data)}\n\n`;
+}
 
-  if (!message) {
-    return NextResponse.json({ error: 'Message is required' }, { status: 400 });
-  }
-
-  // These environment variables are required for the agent to work.
-  const algoliaAppId = process.env.ALGOLIA_APP_ID;
-  const algoliaApiKey = process.env.ALGOLIA_API_KEY;
-  const algoliaAgentUrlEnv = process.env.ALGOLIA_AGENT_URL?.trim();
-
-  if (!algoliaAppId || !algoliaApiKey) {
-    console.error('Missing Algolia environment variables (APP_ID or API_KEY)');
-    return NextResponse.json(
-      { error: 'Server configuration error. Unable to process requests.' },
-      { status: 500 }
-    );
-  }
-
-  // Prefer an explicit ALGOLIA_AGENT_URL (recommended). If not set, fall back
-  // to a sensible default that matches the expected Algolia agent-hosting pattern.
-  let algoliaAgentUrl = algoliaAgentUrlEnv || `https://${algoliaAppId}.algolia.net/agent-studio/1/agents/chat`;
-
-  // If the configured URL does not point to the completions endpoint, append it.
-  if (!/\/completions/i.test(algoliaAgentUrl)) {
-    // Use ai-sdk-4 compatibility by default when constructing the completions URL
-    // since the `messages: [{ role: 'user', content: ... }]` shape maps to ai-sdk-4
-    algoliaAgentUrl = algoliaAgentUrl.replace(/\/+$/,'') + '/completions?compatibilityMode=ai-sdk-4';
-  }
-
-  // Normalize URL and compatibility mode (force ai-sdk-4 for our message shape)
+/**
+ * POST /api/devbuddy
+ * 
+ * Request body: { messages: Message[] }
+ * 
+ * Message structure:
+ * {
+ *   role: 'user' | 'assistant',
+ *   parts: [ { type: 'text' | 'code', text: string } ]
+ * }
+ * 
+ * Response: Server-Sent Events (SSE) stream with text-delta and source references
+ */
+export async function POST(req: Request) {
   try {
-    const parsed = new URL(algoliaAgentUrl);
-    const currentMode = parsed.searchParams.get('compatibilityMode');
-    if (!currentMode) {
-      parsed.searchParams.set('compatibilityMode', 'ai-sdk-4');
-    } else if (currentMode.toLowerCase() === 'ai-sdk-5') {
-      // If an env or URL explicitly uses ai-sdk-5, override to ai-sdk-4 to match our payload
-      parsed.searchParams.set('compatibilityMode', 'ai-sdk-4');
+    // Parse incoming messages from frontend
+    const { messages } = await req.json();
+
+    if (!messages || messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No messages provided' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
-    algoliaAgentUrl = parsed.toString();
-  } catch (err) {
-    console.error('Invalid ALGOLIA_AGENT_URL:', algoliaAgentUrl, err);
-    return NextResponse.json(
-      { error: 'Invalid ALGOLIA_AGENT_URL environment variable.' },
-      { status: 500 }
-    );
-  }
 
-  try {
-    // Add a timeout using AbortController to avoid hanging requests
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s
-
-    // Use the messages shape expected by the agent.
-    const requestBody = { messages: [{ role: 'user', content: message }] };
-
-    // Log the constructed URL and request body for debugging compatibility issues
-    console.log('Proxying to Algolia Agent URL:', algoliaAgentUrl);
-    console.log('Request body sample:', JSON.stringify(requestBody).slice(0, 200));
-
-    const response = await fetch(algoliaAgentUrl, {
+    /**
+     * Forward to Algolia Agent Studio
+     * 
+     * The Agent Studio API expects:
+     * - POST request with messages history
+     * - Authentication via X-Algolia-API-Key and X-Algolia-Application-Id headers
+     * - Optional 'stream: true' to enable streaming responses
+     */
+    const agentResponse = await fetch(ALGOLIA_AGENT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Algolia-Application-Id': algoliaAppId,
-        'X-Algolia-API-Key': algoliaApiKey,
+        // Algolia Agent Studio authentication
+        'X-Algolia-API-Key': ALGOLIA_API_KEY,
+        'X-Algolia-Application-Id': ALGOLIA_APP_ID,
+        // Accept event-stream for streaming support
+        Accept: 'text/event-stream, application/json',
       },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
+      // Forward the conversation history
+      // The Agent Studio will use context from all messages
+      body: JSON.stringify({
+        messages,
+        stream: true, // Enable streaming for real-time responses
+      }),
     });
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Algolia agent request failed:', response.status, errorText);
-
-      if (response.status === 401) {
-        return NextResponse.json(
-          { error: 'Algolia authentication error. Check your ALGOLIA_API_KEY and ALGOLIA_APP_ID.' },
-          { status: 401 }
-        );
-      }
-
-      if (response.status === 422) {
-        // Return upstream validation details to the client for debugging
-        return NextResponse.json(
-          { error: 'Agent rejected the input (422). See details.', detail: errorText },
-          { status: 422 }
-        );
-      }
-
-      if (errorText.includes('failed to resolve') || errorText.toLowerCase().includes('dns')) {
-        return NextResponse.json(
-          { error: `DNS resolution failed. Please verify your ALGOLIA_AGENT_URL or ALGOLIA_APP_ID.` },
-          { status: 502 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: `Failed to get response from the agent. Status: ${response.status}`, detail: errorText },
-        { status: response.status }
+    // Error handling: if Algolia API returns error, forward it
+    if (!agentResponse.ok) {
+      const text = await agentResponse.text();
+      return new Response(
+        JSON.stringify({ error: `Algolia API error: ${text}` }),
+        { status: agentResponse.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // If the agent returns an SSE stream (text/event-stream), assemble the chunks
-    const contentType = response.headers.get('content-type') ?? '';
-    if (contentType.includes('text/event-stream')) {
-      const streamText = await response.text();
+    /**
+     * Check response content type to determine if streaming
+     * 
+     * If streaming (text/event-stream or chunked):
+     *   - Forward the body directly to preserve streaming
+     * If JSON:
+     *   - Parse and convert to SSE format for consistent client parsing
+     */
+    const contentType = agentResponse.headers.get('content-type') || '';
+    const isStreaming =
+      contentType.includes('text/event-stream') ||
+      contentType.includes('stream') ||
+      contentType.includes('octet-stream');
 
-      // Assemble chunked lines like `0:"..."` into a full response string
-      const lines = streamText.split(/\r?\n/);
-      let assembled = '';
-      for (const line of lines) {
-        // match lines that start with a numeric prefix like `0:"..."` and extract inside quotes
-        const m = line.match(/^\d+:(?:"([\s\S]*)"|(.*))/);
-        if (m) {
-          const chunk = m[1] ?? m[2] ?? '';
-          // unescape common sequences
-          assembled += chunk.replace(/\\"/g, '"').replace(/\\n/g, '\n');
-        }
-      }
-
-      // Trim trailing/leading whitespace
-      assembled = assembled.trim();
-
-      // Return in our frontend-friendly shape
-      const mapped = {
-        answer: { text: assembled },
-        sources: [],
-        raw_stream: streamText,
-      };
-      return NextResponse.json(mapped);
+    // If it's a streaming response, pipe it directly to the client
+    if (agentResponse.body && isStreaming) {
+      return new Response(agentResponse.body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+        },
+      });
     }
 
-    const data = await response.json();
+    // Otherwise parse JSON and convert to SSE format
+    try {
+      const json = await agentResponse.json();
 
-    // Best-effort mapping of common completion shapes to our expected frontend shape
-    if (!data || (!data.answer && !data.sources)) {
-      // Common OpenAI-like shape
-      const choiceText = data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.output?.[0]?.content?.[0]?.text;
-      const sources = data?.sources ?? data?.results?.[0]?.sources ?? [];
-      if (choiceText) {
-        const mapped = {
-          answer: { text: String(choiceText) },
-          sources: Array.isArray(sources) ? sources : [],
-          raw: data,
-        };
-        return NextResponse.json(mapped);
+      // Extract the answer from various possible response structures
+      let answer = '';
+      if (typeof json === 'string') {
+        answer = json;
+      } else if (json.answer) {
+        answer = json.answer;
+      } else if (json.message) {
+        answer = json.message;
+      } else if (json.content) {
+        answer = json.content;
+      } else if (json.text) {
+        answer = json.text;
+      } else {
+        answer = JSON.stringify(json);
       }
 
-      // If nothing map-able, return the raw data with a 502 status and provide diagnostics
-      console.error('Unexpected agent response shape:', data);
-      return NextResponse.json(
-        { error: 'Received an invalid or unexpected response from the Algolia agent.', raw: data },
-        { status: 502 }
-      );
-    }
+      /**
+       * Convert JSON response to SSE format
+       * 
+       * Send the answer in chunks to simulate streaming:
+       * 1. text-delta events for character-by-character typing
+       * 2. [DONE] to signal completion
+       * 
+       * The frontend parser will reconstruct the full message
+       */
+      const body = new ReadableStream({
+        start(controller) {
+          // Send answer as text-delta events (more compatible with Algolia Agent Studio format)
+          // Split into reasonable chunks for smoother streaming
+          const chunkSize = 50; // characters per chunk
+          for (let i = 0; i < answer.length; i += chunkSize) {
+            const chunk = answer.substring(i, i + chunkSize);
+            controller.enqueue(
+              new TextEncoder().encode(
+                formatAsSSE({ type: 'text-delta', delta: chunk })
+              )
+            );
+          }
 
-    return NextResponse.json(data);
+          // Send completion marker
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+        },
+      });
+    } catch (parseError) {
+      // Fallback: if JSON parsing fails, send response as text
+      const txt = await agentResponse.text();
+      const body = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode(
+              formatAsSSE({ type: 'text-delta', delta: txt })
+            )
+          );
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+        },
+      });
+    }
   } catch (error: any) {
-    console.error('Error calling the Algolia agent:', error);
-
-    // Handle timeout abort
-    if (error.name === 'AbortError') {
-      return NextResponse.json(
-        { error: 'Request to Algolia agent timed out.' },
-        { status: 504 }
-      );
-    }
-
-    // DNS ENOTFOUND
-    if (error.cause && typeof error.cause === 'object' && 'code' in error.cause && error.cause.code === 'ENOTFOUND') {
-      return NextResponse.json(
-        { error: `DNS lookup failed for ${algoliaAgentUrl}. Please verify ALGOLIA_AGENT_URL and ALGOLIA_APP_ID.` },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'An unexpected error occurred while contacting the agent.' },
-      { status: 500 }
+    console.error('DevBuddy API Error:', error);
+    return new Response(
+      JSON.stringify({
+        error: error?.message || 'Unknown server error',
+        details: 'Check that ALGOLIA_AGENT_URL, ALGOLIA_API_KEY, and ALGOLIA_APP_ID environment variables are configured.',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

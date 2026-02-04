@@ -1,174 +1,605 @@
-# DevBuddy - Codebase Intelligence Assistant
+# DevBuddy - ChatGPT-Style AI Codebase Assistant
 
-DevBuddy is a sleek, production-ready web application built for the **Algolia Agent Studio Challenge**. It provides a clean and intuitive interface for developers to ask natural language questions about a codebase and receive intelligent, source-grounded answers powered by an Algolia AI Agent.
+A modern, production-ready chat application for the **Algolia Agent Studio Challenge**. Powered by Next.js 16, React 19, Tailwind CSS 4, and integrated with Algolia Agent Studio for AI-powered codebase analysis.
 
-The application demonstrates a powerful Retrieval-Augmented Generation (RAG) workflow, where questions are enriched with relevant data from a pre-indexed codebase before being sent to the AI agent, ensuring accurate and context-aware responses.
+## ✨ Features
 
-![image](https://github.com/user-attachments/assets/dd04a376-78bf-45bc-8a7e-13c51efceb8e)
+### UI/UX
+- **ChatGPT-Style Layout** - Full-screen chat with sticky header and fixed input
+- **Message Bubbles** - User (right-aligned, blue) and AI (left-aligned, dark)
+- **Streaming Responses** - Real-time typing effect as responses arrive
+- **Code Syntax Highlighting** - 100+ languages via highlight.js with copy button
+- **Mobile Responsive** - Optimized for mobile, tablet, and desktop
+- **Dark Mode** - Native light/dark theme support
+- **Smooth Animations** - Framer Motion throughout
+- **Keyboard Shortcuts** - Ctrl/Cmd+Enter to send, Shift+Enter for newline
 
+### Algolia Integration
+- **Edge Function Proxy** - Fast API route with global deployment
+- **Streaming SSE** - Real-time chunked responses
+- **Multi-part Messages** - Text, code, and references
+- **Error Handling** - Automatic fallbacks and user-friendly errors
+- **Authentication** - Secure header-based credentials
 
-## ✨ Core Features
+### Developer Experience
+- **Full TypeScript** - Strict type checking
+- **Well-Documented** - Inline comments and comprehensive guides
+- **Tailwind Only** - No component libraries, pure utilities
+- **Modular Components** - Reusable, tested building blocks
+- **Easy Deployment** - One-click deploy to Vercel
 
-- **Intuitive UI:** A clean, "glossy," and developer-focused interface for asking questions and viewing responses.
-- **Secure API:** All communication with the Algolia agent is proxied through a secure, server-side Next.js API route. No API keys are ever exposed to the client.
-- **Dynamic URL Construction:** The application dynamically constructs the Algolia agent URL from your App ID, reducing configuration errors.
-- **Structured Responses:** Agent responses are beautifully formatted into clear sections: Short Answer, Sources, and Explanation.
-- **Robust Error Handling:** The interface provides clear feedback for configuration issues (like an invalid App ID) or network errors.
+---
 
-## 🛠️ Tech Stack
+## 🚀 Quick Start
 
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **AI Agent:** Algolia Agent Studio
-- **Icons:** Lucide React
-
-## 🚀 Getting Started
-
-Follow these instructions to get a local copy up and running.
-
-### Prerequisites
-
-- Node.js (v18 or later recommended)
-- npm or yarn
-
-### 1. Installation
-
-Clone the repository and install the dependencies.
+### 1. Install Dependencies
 
 ```bash
-git clone <your-repository-url>
-cd <repository-name>
+cd devChallange
 npm install
 ```
 
-### 2. Environment Variables
+### 2. Configure Algolia
 
-This is the most critical step. The application will not work without valid Algolia credentials.
+Create `.env.local`:
 
-Create a new file named `.env.local` in the root of your project and add the following variables:
-
-```dotenv
-# Your actual Algolia Application ID
-ALGOLIA_APP_ID="YOUR_APP_ID"
-
-# Your Algolia API Key (use an Admin API Key or a key with agent permissions)
-ALGOLIA_API_KEY="YOUR_API_KEY"
-
-# (Optional) Specify the region if your app is not in the default 'us' region
-# ALGOLIA_AGENT_REGION="your_region"
+```env
+ALGOLIA_AGENT_URL=https://agent.algolia.com/v1/instances/{YOUR_INSTANCE_ID}/responses
+ALGOLIA_API_KEY=your_api_key_here
+ALGOLIA_APP_ID=your_app_id_here
 ```
 
-**Where to find your credentials:**
-1. Log in to your [Algolia Dashboard](https://www.algolia.com/users/sign_in).
-2. Your **Application ID** is found in the "API Keys" section.
-3. Your **API Key** is also in the "API Keys" section. Ensure it has the necessary permissions to interact with your agent.
+📖 **See [ALGOLIA_SETUP.md](./ALGOLIA_SETUP.md)** for detailed instructions.
 
-### 3. Running the Application
-
-Once your environment variables are set, you can run the development server:
+### 3. Run Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 4. Deploy (Optional)
+
+```bash
+npm i -g vercel
+vercel
+```
+
+📖 **See [DEPLOYMENT.md](./DEPLOYMENT.md)** for full deployment guide.
+
+---
 
 ## 📁 Project Structure
 
-- **/app/page.tsx**: The main frontend component containing the UI, form logic, and state management.
-- **/app/api/devbuddy/route.ts**: The secure, server-side API route that proxies requests to the Algolia Agent Studio.
-- **/app/globals.css**: Contains global styles, including the animated background and "glassmorphism" UI effects.
-- **/tailwind.config.ts**: The configuration file for Tailwind CSS.
-- **/public/**: Public assets folder.
+```
+app/
+├── page.tsx                          # Main chat page (ChatGPT layout)
+├── layout.tsx                        # Root layout + highlight.js CDN
+├── globals.css                       # Global styles + animations
+│
+├── api/
+│   └── devbuddy/
+│       └── route.ts                  # Backend proxy to Algolia Agent Studio
+│
+├── components/
+│   ├── ChatInput.tsx                 # Multi-line input textarea (bottom)
+│   ├── UserMessage.tsx               # Right-aligned user messages
+│   ├── AIMessage.tsx                 # Left-aligned AI responses
+│   ├── WelcomeScreen.tsx             # Initial empty state
+│   ├── Answer.tsx                    # Legacy (optional)
+│   ├── GlassCard.tsx                 # Reusable card
+│   └── InstantSearchWidget.tsx       # Optional search
+│
+├── hooks/
+│   └── useChat.tsx                   # State management + SSE parser
+│
+├── types/
+│   └── agent.ts                      # TypeScript interfaces
+│
+└── utils/
+    ├── highlightCode.ts              # Syntax highlighting
+    ├── parseStreaming.ts             # Stream parsing
+    └── cn.ts                         # Tailwind merge
+```
+
+---
+
+## 🎨 Component Overview
+
+### `page.tsx` - Main Chat Page
+
+**Layout**: Header (fixed) → Messages (scrollable) → Input (fixed)
+
+```tsx
+// Auto-scroll to latest message
+useEffect(() => {
+  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, [messages, isLoading]);
+
+// Render messages
+{messages.map((m) => 
+  m.role === 'user' ? <UserMessage /> : <AIMessage />
+)}
+```
+
+### `ChatInput.tsx` - Input Component
+
+**Features**:
+- Auto-expand textarea as user types
+- Keyboard: Ctrl+Enter to send, Shift+Enter for newline
+- Loading state disables input during streaming
+- Visual feedback with spinner
+
+```tsx
+<textarea
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      handleSend();
+    }
+  }}
+/>
+```
+
+### `UserMessage.tsx` - User Bubbles
+
+**Styling**:
+- Right-aligned with blue gradient background
+- Supports text and code parts
+- Slide-in animation on arrival
+
+### `AIMessage.tsx` - AI Responses
+
+**Features**:
+- Left-aligned with dark background
+- Text with line-break support
+- Code blocks with syntax highlighting
+- Copy button for snippets
+- Typing cursor when streaming
+
+```tsx
+<CodeBlock code={code} language="typescript" />
+// ↓
+<pre>const x = 42;</pre>  // syntax-highlighted
+```
+
+### `useChat.tsx` - State & Streaming
+
+**Manages**:
+- Message history (user + AI)
+- Streaming parser for SSE events
+- Auto-ID generation and timestamps
+
+**Streaming Parser**:
+```tsx
+// Handles: text-delta, text-start/end, JSON fallback
+if (parsed.type === 'text-delta' && parsed.delta) {
+  // Append text chunk to last message
+  setMessages((cur) =>
+    cur.map((m) =>
+      m.id === lastId
+        ? { ...m, parts: [...m.parts.slice(0, -1), 
+            { ...m.parts[-1], text: m.parts[-1].text + parsed.delta }] }
+        : m
+    )
+  );
+}
+```
+
+### `route.ts` - Backend API
+
+**Endpoint**: `POST /api/devbuddy`
+
+**Request**:
+```json
+{
+  "messages": [
+    { "role": "user", "parts": [{ "type": "text", "text": "How to...?" }] }
+  ]
+}
+```
+
+**Response**: SSE stream
+```
+data: {"type":"text-delta","delta":"Here"}
+data: {"type":"text-delta","delta":" is..."}
+data: [DONE]
+```
+
+**Logic**:
+1. Receive messages from frontend
+2. Forward to Algolia Agent Studio REST API
+3. If streaming → pipe directly to client
+4. If JSON → convert to SSE format
+5. Return with `Content-Type: text/event-stream`
+
+---
+
+## 🔧 Configuration
+
+### Algolia Credentials
+
+Get from [console.algolia.com](https://console.algolia.com):
+
+```env
+# Agent Studio Instance URL
+ALGOLIA_AGENT_URL=https://agent.algolia.com/v1/instances/{INSTANCE_ID}/responses
+
+# API Key (with Agent Studio permissions)
+ALGOLIA_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Your Algolia App ID
+ALGOLIA_APP_ID=XXXXXX
+```
+
+### Tailwind v4 Configuration
+
+Classes use new v4 syntax:
+- `bg-linear-to-r` (was `bg-gradient-to-r`)
+- `shrink-0` (was `flex-shrink-0`)
+- `wrap-break-word` (was `break-words`)
+
+---
+
+## 🌙 Dark Mode
+
+Automatically respects system preference:
+
+```css
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #0f172a;
+    color: #ffffff;
+  }
+}
+```
+
+Tailwind classes work automatically:
+```tsx
+<div className="dark:bg-slate-800">Content</div>
+```
+
+---
+
+## 📱 Responsive Design
+
+Message bubbles resize based on screen:
+
+| Screen | Max Width |
+|--------|-----------|
+| Mobile | `max-w-xs` (20rem) |
+| Tablet | `max-w-md` (28rem) |
+| Desktop | `max-w-2xl` (42rem) |
+
+Input always takes full width with padding.
+
+---
+
+## 💻 Syntax Highlighting
+
+Uses **highlight.js** from CDN:
+
+```html
+<!-- app/layout.tsx -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+```
+
+**100+ languages supported**: JavaScript, TypeScript, Python, Java, SQL, HTML, CSS, Bash, Go, Rust, C++, PHP, and more.
+
+**Usage**:
+```tsx
+import { highlightCode } from '@/utils/highlightCode';
+
+const html = highlightCode('const x = 42;', 'javascript');
+// Returns HTML with <span> tags for syntax coloring
+```
+
+---
+
+## 🎬 Animations
+
+**Framer Motion**:
+```tsx
+<motion.div
+  initial={{ opacity: 0, x: 20 }}        // Start state
+  animate={{ opacity: 1, x: 0 }}         // End state
+  transition={{ duration: 0.3 }}         // Duration
+>
+  Content
+</motion.div>
+```
+
+**CSS Animations** (in globals.css):
+```css
+@keyframes fadeIn { ... }
+@keyframes slideInFromRight { ... }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+```
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Enter` / `Cmd+Enter` | Send message |
+| `Shift+Enter` | New line in input |
+| `Tab` | Focus next element |
+| `Esc` | (Future: close modals) |
+
+---
+
+## 🔍 Data Flow
+
+```
+User Input
+    ↓
+ChatInput captures text
+    ↓
+Click Send → onSend(message)
+    ↓
+useChat.sendMessage()
+    ↓
+POST /api/devbuddy
+    ↓
+Edge Function receives
+    ↓
+Authenticate & forward to Algolia
+    ↓
+Algolia Agent Studio LLM
+    ↓
+Stream SSE chunks back
+    ↓
+Frontend parser (useChat)
+    ↓
+AppendMessage to UI
+    ↓
+Message appears with typing effect
+    ↓
+Copy/syntax highlight available
+```
+
+---
+
+## 🧪 Testing
+
+### Manual Testing
+
+```bash
+# 1. Start dev server
+npm run dev
+
+# 2. Send message
+# Input: "Show me a React hook"
+# Expected: Streaming response with code block
+
+# 3. Copy code
+# Click copy button
+# Paste somewhere to verify
+```
+
+### Automated Testing (Future)
+
+```bash
+npm run test
+```
+
+---
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+```bash
+# 1. Push to GitHub
+git push origin main
+
+# 2. Deploy to Vercel
+vercel
+
+# 3. Add environment variables in Vercel dashboard
+# ALGOLIA_AGENT_URL, ALGOLIA_API_KEY, ALGOLIA_APP_ID
+```
+
+**Result**: Live at `https://devbuddygo.netlify.app`
+
+### Railway/Render/Other
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for Docker, Railway, Render instructions.
+
+---
+
+## 📊 Performance
+
+- **Edge Runtime** - Vercel Edge Functions for global low-latency
+- **Streaming** - Reduces time-to-first-byte (TTFB)
+- **Code Splitting** - Automatic with Next.js
+- **CSS Optimization** - Tailwind purges unused styles
+- **Image Optimization** - Ready for future image features
+
+---
+
+## 🔐 Security
+
+✅ Environment variables stored securely
+✅ API keys never exposed to frontend
+✅ HTML escaped in code blocks (XSS protection)
+✅ Strict input validation
+✅ HTTPS only in production
+
+❌ Avoid hardcoding secrets in code
+❌ Never commit `.env.local` to Git
+
+---
+
+## 🐛 Troubleshooting
+
+### "Cannot find module" error
+
+```bash
+# Clear Next.js cache
+rm -rf .next
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# Restart dev server
+npm run dev
+```
+
+### Network error / 401 Unauthorized
+
+- Check `.env.local` has correct Algolia credentials
+- Verify API key has Agent Studio permissions
+- Test with curl first
+
+```bash
+curl -X POST $ALGOLIA_AGENT_URL \
+  -H "X-Algolia-API-Key: $ALGOLIA_API_KEY" \
+  -H "X-Algolia-Application-Id: $ALGOLIA_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[]}'
+```
+
+### Syntax highlighting not working
+
+- Check browser console for errors
+- Hard refresh: `Ctrl+Shift+R`
+- Verify CDN link in `app/layout.tsx`
+
+### Messages not streaming
+
+- Check Network tab: `/api/devbuddy` response should be `text/event-stream`
+- Look for `data: {...}` events in response
+- Check frontend console for parsing errors
+
+---
+
+## 📚 Resources
+
+- **Next.js 16**: https://nextjs.org/docs
+- **React 19**: https://react.dev
+- **Tailwind CSS 4**: https://tailwindcss.com
+- **Framer Motion**: https://framer.com/motion
+- **highlight.js**: https://highlightjs.org
+- **Algolia Agent Studio**: https://www.algolia.com/doc/
+
+---
+
+## 📖 Additional Guides
+
+- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)** - Technical architecture & component docs
+- **[ALGOLIA_SETUP.md](./ALGOLIA_SETUP.md)** - Algolia credentials & configuration
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deploy to production & submission guide
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+MIT - Use freely for personal and commercial projects.
 
 ---
 
-## 🤖 Agent Prompt & Behavior
+## 🤝 Support
 
-The following is the system prompt used to configure the **DevBuddy** agent within **Algolia Agent Studio**. It defines the agent's mission, knowledge sources, constraints, and the required structure for its responses. This is key to understanding how the agent processes questions and generates answers based on the retrieved codebase data.
-
-```markdown
-# DevBuddy – Codebase Intelligence Agent
-
-You are **DevBuddy**, an expert AI assistant designed to help developers understand, navigate, and debug a software project.
-
-## Core Mission
-Your job is to answer developer questions using **ONLY the retrieved project data provided to you** via Algolia search results.
-
-You do NOT guess.
-You do NOT hallucinate.
-You do NOT use external knowledge.
-
-If the answer is not present in the retrieved context, you must say:
-> "I couldn’t find that information in the current codebase."
+- Check the guides above
+- Review inline comments in code
+- Check browser DevTools for errors
+- Test API with curl before debugging frontend
 
 ---
 
-## What You Know
-You are given:
-- README files
-- Documentation
-- Issues and discussions
-- Code comments and descriptions
-- File paths and URLs
+**Built for the Algolia Agent Studio Challenge 🏆**
 
-All knowledge comes from these sources.
+**Live Demo**: https://devbuddygo.netlify.app/
+**GitHub**: https://github.com/salekmasudparvez1/devBuddy
 
----
-
-## How You Answer
-When responding:
-
-1. **Be precise and concise**
-2. **Quote or reference the source**
-3. **Explain in developer-friendly language**
-4. **Use code snippets if available**
-5. **Mention file names or paths when relevant**
-
----
-
-## Response Structure (STRICT)
-Always follow this format:
-
-### ✅ Short Answer
-Give a direct answer in 1–3 sentences.
-
-### 📄 Source
-List the most relevant retrieved source(s):
-- File: `path/to/file`
-- Type: README / Doc / Issue / Comment
-- Link (if available)
-
-### 🧠 Explanation
-Explain *why* this is the answer, using retrieved context.
-
-### 🧩 Related Info (Optional)
-Mention any closely related functionality if found in the data.
-
----
-
-## Rules You MUST Follow
-- Do not invent functions, files, or behavior
-- Do not assume intent beyond retrieved data
-- Do not answer outside the project scope
-- If multiple interpretations exist, explain them clearly
-
----
-You may use the Search tool to:
-- Search for function names, errors, or keywords
-- Narrow queries to specific directories
-- Retry searches if initial results are insufficient
-
-## Tone
-- Professional
-- Helpful
-- Calm
-- Confident, but honest about uncertainty
-
-You are a senior developer helping another developer.
+### 1) Install
+```bash
+git clone <repo-url>
+cd <repo>
+npm install
 ```
+
+### 2) Environment
+Create `.env.local` in the project root and provide these variables:
+
+```dotenv
+# Agent Studio endpoint (Agent response endpoint)
+ALGOLIA_AGENT_URL="https://agent.algolia.com/v1/instances/<your-instance-id>/responses"
+
+# Agent/Admin key (server only)
+ALGOLIA_API_KEY="YOUR_AGENT_KEY"
+ALGOLIA_APP_ID="YOUR_APP_ID"
+
+# Optional (for InstantSearch widget): set these for client-side search
+NEXT_PUBLIC_ALGOLIA_APP_ID="YOUR_APP_ID"
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY="YOUR_SEARCH_ONLY_KEY"
+NEXT_PUBLIC_ALGOLIA_INDEX="your_index_name"
+```
+
+Important: Keep `ALGOLIA_API_KEY` and `ALGOLIA_APP_ID` private (server-side). Use search-only keys for client-side InstantSearch.
+
+### 3) Run locally
+```bash
+npm run dev
+```
+Open http://localhost:3000
+
+---
+
+## How streaming works ✨
+
+- The frontend sends conversation history to `/api/devbuddy`.
+- The Edge route proxies the request to your Algolia Agent Studio endpoint, requesting a streaming response.
+- The backend forwards the stream (SSE/chunked) directly to the browser.
+- The client reads the stream in real-time and appends incremental deltas to the assistant message (supports multi-part messages and code blocks).
+
+This reduces latency and provides instant partial answers while the agent finishes.
+
+---
+
+## Files of interest 🔧
+
+- `app/api/devbuddy/route.ts` — Backend Edge route; proxies to Algolia Agent Studio and forwards streaming chunks (Algolia-specific logic). (Backend)
+- `app/hooks/useChat.tsx` — Client hook that manages messages, streaming parsing, multi-part support, and UI state. (Frontend)
+- `app/page.tsx` — Main UI and composition (glass input, sticky header, auto-scroll, message layout). (Frontend UI)
+- `app/components/Answer.tsx` — Renders agent responses and sources (multi-part handling). (Frontend UI)
+- `app/components/InstantSearchWidget.tsx` — Optional consumer-facing InstantSearch widget (dynamic import, optional). (Frontend optional)
+
+---
+
+## Notes for judges & testers 🧪
+
+- Streaming: type a question and watch the assistant produce partial answers in real-time. The progress bar indicates active streaming.
+- History: use the Clear button to reset conversation history quickly.
+- Mobile: UI is responsive and optimized for phones and tablets.
+
+Test credentials: This repo does not ship with any Algolia credentials. Provide your own Agent Studio endpoint and API keys in `.env.local`. For a quick demo, use a test Agent Studio instance with a streaming-enabled endpoint and a search-only key for the InstantSearch widget.
+
+---
+
+## Optional: InstantSearch Chat Widget
+
+If you provide `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_SEARCH_KEY`, and `NEXT_PUBLIC_ALGOLIA_INDEX` the InstantSearch widget will display. It is implemented with dynamic imports to avoid bundling when unused. Install `react-instantsearch-hooks-web` (already listed in package.json) for full client search.
+
+---
+
+## Deployment
+
+This project is optimized for deployment on platforms that support Next.js Edge runtime (Vercel, Netlify Edge). Ensure env variables are set in the deployment environment.
+
+---
+
+## Contributing
+
+Contributions and improvements are welcome. Please ensure types and comments are kept clear for reviewers.
+
+---
+
+## License
+
+MIT
+

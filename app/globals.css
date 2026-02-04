@@ -6,18 +6,32 @@
   --glass-highlight: rgba(255, 255, 255, 0.05);
 }
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
+* {
+  @apply transition-colors;
+}
+
 body {
-  background-color: #050505;
-  color: #ffffff;
-  /* Premium dark background with a subtle fixed gradient center */
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.15), transparent 50%),
-    radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.1), transparent 40%);
+  background-color: #ffffff;
+  color: #000000;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* Subtle noise texture overlay for realism */
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #0f172a;
+    color: #ffffff;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.1), transparent 50%),
+      radial-gradient(circle at 100% 0%, rgba(3, 102, 214, 0.05), transparent 40%);
+  }
+}
+
+/* Subtle noise texture overlay */
 .bg-noise {
   position: fixed;
   top: 0;
@@ -26,21 +40,165 @@ body {
   height: 100%;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.03;
+  opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Custom Scrollbar for response area */
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 10px;
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.7);
+  }
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  scrollbar-width: thin;
+}
+
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: rgba(71, 85, 105, 0.5) transparent;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Tailwind animation classes */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+/* ============================================
+   CUSTOM UTILITIES
+   ============================================ */
+
+/* Text selection color */
+::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: inherit;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Code block styling */
+code {
+  @apply font-mono text-sm;
+}
+
+pre {
+  @apply overflow-auto;
+}
+
+/* Link styling */
+a {
+  @apply text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-800;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Mobile optimizations */
+  body {
+    font-size: 16px; /* Prevent zoom on input focus */
+  }
 }
